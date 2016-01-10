@@ -11,6 +11,8 @@ from experiment_handling import io, data
 from fisherman import detection
 from argparse import ArgumentParser
 from os import path, getcwd
+from itertools import izip
+from skimage import io
 
 FISHERMAN_ROOT = path.expanduser('/groups/gray/image_processing/build/fisherman')
 VSI_PIXEL_SCALE = .64497 # in um
@@ -31,10 +33,10 @@ def configure_parser():
                         default=path.join(FISHERMAN_ROOT, 'caffe/fish_net_conv_deploy.prototxt'),
                         help='Path to the net prototxt file to use for cell detection'
                              'Default: $FISHERMAN/caffe/fish_net_conv_deploy.prototxt')
-    parser.add_argument('-c', '--chunk_size', default=1000,
+    parser.add_argument('-c', '--chunk_size', default=1800,
                         help='The width of chunks to split input vsis into. '
                         'This value should be as large as possible before memory issues are encounted. '
-                        'Chunks are square so the height will equal the width. Default = 1000')
+                        'Chunks are square so the height will equal the width. Default = 1800')
     
     return parser
 
@@ -66,6 +68,18 @@ def filter_duplicates(cells, chunk_row, chunk_col, chunk_size):
     min_col = chunk_col * chunk_size
     return (cell for cell in cells if cell.centroid[0] > min_row and cell.centroid[1] > min_col)
 
+def offset_cells(cells, chunk_row, chunk_col, chunk_size):
+    min_row = chunk_row * chunk_size
+    min_col = chunk_col * chunk_size
+    for cell in cells:
+        bbox = numpy.asarray(cell.bbox)
+        cell.bbox = bbox + numpy.array((min_row, min_col, min_row, min_col))
+
+        centroid = numpy.asarray(cell.centroid)
+        cell.centroid = centroid + numpy.array((min_row, min_col))
+
+    return cells
+
 
 def main():
     # Parse command line input
@@ -88,14 +102,14 @@ def main():
     # The cell_radius is important for processing the output of fish_net (ex. separating nearby cells)
     # The signal_channel specifies the channel in the input image that contains the relevant signal (i.e. the ISH stain)
     detector_chunker_params = {
-        'chunk_size': args.chunk_size,
+        'chunk_size': 954,
         'stride': 6,
         'window_size': 49,
         'num_classes': 2
     }
 
     cell_detector = detection.CellDetector(net=fish_net, cell_radius=12, signal_channel=0, chunker_params=detector_chunker_params)
-    cell_detector.set_mode_cpu()
+    cell_detector.set_mode_gpu()
 
     # Configure and start the JVM for loading vsi images with bioformats
     javabridge.start_vm(class_path=bioformats.JARS)
@@ -105,17 +119,23 @@ def main():
     vsi_image = load_vsi(vsi_path)
     javabridge.kill_vm() # Caffe will segfault if the jvm is running...
 
-    vsi_chunker = detection.ImageChunker(vsi_image.transpose(2,0,1), chunk_size=detector_chunker_params['chunk_size'])
+    vsi_chunker = detection.ImageChunker(vsi_image.transpose(2,0,1), chunk_size=detector_chunker_params['chunk_size']*5)
 
-    for chunk in vsi_chunker:
+    output_mask = numpy.zeros_like(vsi_image[:,:,1], dtype=numpy.float32)
+    io.imsave(path.expanduser('~/Desktop/full_vsi_output.tif'), output_mask)
+    mask_chunker = detection.ImageChunker(output_mask[numpy.newaxis, ...], chunk_size=detector_chunker_params['chunk_size']*5)
+
+    for chunk, mask_chunk in izip(vsi_chunker, mask_chunker):
         cell_detector.set_image(chunk.transpose(1,2,0))
         detected_cells = cell_detector.detect_cells()
-        filtered_cells = filter_duplicates(detected_cells, vsi_chunker.current_chunk_row, vsi_chunker.current_chunk_col, args.chunk_size)
+        detected_cells = filter_duplicates(detected_cells, vsi_chunker.current_chunk_row, vsi_chunker.current_chunk_col, args.chunk_size)
+        detected_cells = offset_cells(detected_cells, vsi_chunker.current_chunk_row, vsi_chunker.current_chunk_col, args.chunk_size)
         physical_cells = map(lambda cell: data.PhysicalCell.from_cell(cell, VSI_PIXEL_SCALE), detected_cells)
         image_descriptor.cells += physical_cells
 
-        print "Detected Cells:", detected_cells
-        print "physical_cells:", physical_cells
+        mask_chunk[...] = cell_detector.get_fish_net_mask(scaled=True, cleaned=True)[...]
+
+    io.imsave(path.expanduser('~/Desktop/full_vsi_output.tif'), output_mask)
 
     # Compute and set the offset of the region map
     vsi_resolution = numpy.asarray(vsi_image.shape[:1], dtype=numpy.int32)

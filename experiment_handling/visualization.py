@@ -21,3 +21,18 @@ def overlay_cells_on_image(image, boundries, cells, offset=(0,0)):
 def filter_cells_by_boundry(cells, boundries):
     return (cell for cell in cells if (cell._bbox[:2] >= numpy.asarray(boundries[:2]).all()
                 and cell._bbox[2:] <= numpy.asarray(boundries[2:]).all()))
+
+def create_cell_mask_from_descriptor(descriptor):
+    num_rows = descriptor.region_map_offset[0]*2 + descriptor.region_map.shape[2] - 1
+    num_rows *= descriptor.region_map_scale
+
+    num_cols = descriptor.region_map_offset[1]*2 + descriptor.region_map.shape[0] - 1
+    num_cols *= descriptor.region_map_scale
+
+    mask = numpy.zeros((num_rows, num_cols))
+
+    for cell in descriptor.cells:
+        first_row, first_col, last_row, last_col = cell.bbox
+        mask[first_row:last_row, first_col:last_col] = cell.get_mask()[...]
+
+    return mask
