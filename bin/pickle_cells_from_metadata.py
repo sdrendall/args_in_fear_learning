@@ -19,7 +19,7 @@ def configure_parser():
     parser = ArgumentParser(description='Detects cells in vsi images in an experiment')
     parser.add_argument('output_path', help='Path to save the pickled output file')
     parser.add_argument('-i', '--input_metadata', 
-                        help='The path to the vsi file to be processed.'
+                        help='The path to the vsi file to be processed.')
     parser.add_argument('-e', '--experiment_path', default=getcwd(),
                         help='The root directory containing the data to be processed.'
                              '  Defaults to the current directory.')
@@ -62,8 +62,9 @@ def compute_offset(vsi_shape):
     return offset.astype(numpy.uint16)
 
 def filter_duplicates(cells, chunk_row, chunk_col, chunk_size):
-    chunk_boundries = numpy.asarray((chunk_row, chunk_col)) * chunk_size
-    return (cell for cell in cells if cell.centroid[0] > chunk_boundries[0] and cell.centroid[1] > chunk_boundries[1])
+    min_row = chunk_row * chunk_size
+    min_col = chunk_col * chunk_size
+    return (cell for cell in cells if cell.centroid[0] > min_row and cell.centroid[1] > min_col)
 
 
 def main():
@@ -86,7 +87,15 @@ def main():
     # Configure a cell detector
     # The cell_radius is important for processing the output of fish_net (ex. separating nearby cells)
     # The signal_channel specifies the channel in the input image that contains the relevant signal (i.e. the ISH stain)
-    cell_detector = detection.CellDetector(net=fish_net, cell_radius=12, signal_channel=0)
+    detector_chunker_params = {
+        'chunk_size': args.chunk_size,
+        'stride': 6,
+        'window_size': 49,
+        'num_classes': 2
+    }
+
+    cell_detector = detection.CellDetector(net=fish_net, cell_radius=12, signal_channel=0, chunker_params=detector_chunker_params)
+    cell_detector.set_mode_cpu()
 
     # Configure and start the JVM for loading vsi images with bioformats
     javabridge.start_vm(class_path=bioformats.JARS)
@@ -94,12 +103,19 @@ def main():
 
     image_descriptor = data.ImageDescriptor.from_metadata(metadata, experiment_path=experiment_path)
     vsi_image = load_vsi(vsi_path)
-    vsi_chunker = detection.ImageChunker(vsi_image.transpose(2,0,1), chunk_size=args.chunk_size)
+    javabridge.kill_vm() # Caffe will segfault if the jvm is running...
+
+    vsi_chunker = detection.ImageChunker(vsi_image.transpose(2,0,1), chunk_size=detector_chunker_params['chunk_size'])
 
     for chunk in vsi_chunker:
         cell_detector.set_image(chunk.transpose(1,2,0))
-        detected_cells = filter_duplicates(cell_detector.detect_cells(), vsi_chunker.current_chunk_row, vsi_chunker.current_chunk_col, args.chunk_size)
-        image_descriptor.cells += map(lambda cell: data.PhysicalCell.from_cell(cell, VSI_PIXEL_SCALE), detected_cells)
+        detected_cells = cell_detector.detect_cells()
+        filtered_cells = filter_duplicates(detected_cells, vsi_chunker.current_chunk_row, vsi_chunker.current_chunk_col, args.chunk_size)
+        physical_cells = map(lambda cell: data.PhysicalCell.from_cell(cell, VSI_PIXEL_SCALE), detected_cells)
+        image_descriptor.cells += physical_cells
+
+        print "Detected Cells:", detected_cells
+        print "physical_cells:", physical_cells
 
     # Compute and set the offset of the region map
     vsi_resolution = numpy.asarray(vsi_image.shape[:1], dtype=numpy.int32)

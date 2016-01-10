@@ -120,7 +120,7 @@ class MetadataManager():
             try:
                 if entry[attribute] == value:
                     return entry
-            except KeyError:
+            except KeyError as e:
                 pass
 
         return None

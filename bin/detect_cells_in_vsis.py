@@ -20,7 +20,7 @@ def main():
 
     vsi_paths = get_matching_files(path.expanduser(argv[1]))
     model_path = path.expanduser(argv[2])
-    net_path = path.expanduser('~/code/fisherman/caffe/fish_net_conv_deploy.prototxt')
+    net_path = path.expanduser('/groups/gray/image_processing/build/fisherman/caffe/fish_net_conv_deploy.prototxt')
 
     fish_net = caffe.Net(net_path, model_path, caffe.TEST)
 
@@ -39,7 +39,7 @@ def main():
     )
     
     detector.set_compute_mask_on_signal_plane_only(True)
-    detector.set_mode_gpu()
+    detector.set_mode_cpu()
 
     javabridge.start_vm(class_path=bioformats.JARS)
     log4j.basic_config()

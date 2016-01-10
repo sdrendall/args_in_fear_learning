@@ -1,7 +1,11 @@
+#! /usr/bin/env python
+
 import json
 from experiment_handling import io, parallelization
 from argparse import ArgumentParser
-from os import path
+from os import path, getcwd
+
+FISHERMAN_ROOT = '/groups/gray/image_processing/build/fisherman'
 
 def configure_parser():
     parser = ArgumentParser(description='Detects cells in vsi images in an experiment')
@@ -27,21 +31,21 @@ def compose_output_path(im_data, suffix):
     # removes '_downsampled' from the downsampled image path and appends a suffix
     return im_data['downsampledImagePath'].rsplit('_', 1)[0] + suffix
 
-def create_process(args, metadata):
+def create_process(args, entry):
     experiment_path = path.expanduser(args.experiment_path)
-    metadata['detectionLog'] = compose_output_path(metadata, u'_detectionOutputLog.txt')
-    metadata['detectedCellsPath'] = compose_output_path(metadata, u'_detectedCells.p')
+    entry['detectionLog'] = compose_output_path(entry, u'_detectionOutputLog.txt')
+    entry['detectedCellsPath'] = compose_output_path(entry, u'_detectedCells.p')
     arg_list = ['pickle_cells_from_metadata.py', 
-        '-i', json.dumps(metadata),
+        '-i', json.dumps(entry),
         '-e', args.experiment_path,
         '-m', args.model_path,
         '-n', args.net_path,
         '-c', args.chunk_size,
-        path.join(experiment_path, metadata['detectedCellsPath'])
+        path.join(experiment_path, entry['detectedCellsPath'])
     ]
 
-    log_path = path.join(experiment_path, metadata['detectionLog'])
-    return parallelization.BatchProcess(*arg_list, cwd=ags.experimentPath, log_path=log_path)
+    log_path = path.join(experiment_path, entry['detectionLog'])
+    return parallelization.BatchProcess(*arg_list, cwd=args.experiment_path, log_path=log_path)
 
 def main():
     parser = configure_parser()
@@ -51,8 +55,8 @@ def main():
     metadata_handler = io.MetadataManager(experiment_path)
 
     scheduler = parallelization.Scheduler()
-    for metadata in metadata_handler:
-        scheduler.add_process(create_process(args, metadata))
+    for entry in metadata_handler.metadata:
+        scheduler.add_process(create_process(args, entry))
 
     print "Launching Cell Detection Jobs"
 

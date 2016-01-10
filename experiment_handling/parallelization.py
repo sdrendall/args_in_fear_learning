@@ -201,7 +201,7 @@ class BatchProcess(Process):
 
     def __init__(self, *args, **kwargs):
         bsub_path = 'bsub'
-        self.submission_args = ['bsub', '-W', '12:00', '-q', 'short']
+        self.submission_args = ['bsub', '-W', '12:00', '-q', 'short', '-R', 'rusage[mem=16000]']
         self.log_path = kwargs.get('log_path', None)
         if self.log_path is not None:
             log_string = '-o %s -e %s ' % (self.log_path, self.log_path)
