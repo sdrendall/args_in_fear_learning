@@ -45,7 +45,7 @@ def create_process(args, entry):
     ]
 
     log_path = path.join(experiment_path, entry['detectionLog'])
-    return parallelization.BatchProcess(*arg_list, cwd=args.experiment_path, log_path=log_path)
+    return parallelization.BatchProcess(*arg_list, cwd=args.experiment_path, log_path=log_path, run_time='2:00')
 
 def main():
     parser = configure_parser()

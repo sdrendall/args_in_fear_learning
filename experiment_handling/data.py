@@ -21,6 +21,7 @@ class ImageDescriptor(object):
         self.region_map_scale = region_map_scale
         self.region_map_offset = region_map_offset
         self.depth = depth
+        self.vsi_resolution = (0, 0)
 
         if cells is not None:
             self.cells = cells
@@ -38,14 +39,14 @@ class ImageDescriptor(object):
         Instantiate an image from the given metadata dict (from a fishRegistration experiment's metadata.json file)
         """
 
-        region_map = io.load_mhd(path.join(experiment_path, metadata['registeredAtlasLabelsPath']))[0],
-        hemisphere_map = io.load_mhd(path.join(experiment_path, metadata['registeredHemisphereLabelsPath']))[0],
+        region_map = io.load_mhd(path.join(experiment_path, metadata['registeredAtlasLabelsPath']))[0]
+        hemisphere_map = io.load_mhd(path.join(experiment_path, metadata['registeredHemisphereLabelsPath']))[0]
         
         return cls(
             source_path=metadata['vsiPath'],
             depth=metadata['atlasCoord'],
-            region_map=numpy.rot90(region_map),
-            hemisphere_map=numpy.rot90(hemisphere_map),
+            region_map=region_map,
+            hemisphere_map=hemisphere_map,
             region_map_scale=region_map_scale,
             region_map_offset=region_map_offset,
             cells=cells
@@ -177,6 +178,20 @@ class ImageDescriptor(object):
         """
         self._cells += list(cells)
 
+    @property
+    def vsi_resolution(self):
+        """
+        Gets the vsi resolution of the corresponding image as a tuple
+        """
+        return tuple(self._vsi_resolution)
+
+    @vsi_resolution.setter
+    def vsi_resolution(self, resolution):
+        """
+        Sets the vsi resolution of the corresponding image
+        """
+        self._vsi_resolution = tuple(resolution)
+
 
 class PhysicalCell(detection.Cell):
     """
@@ -224,11 +239,11 @@ class PhysicalCell(detection.Cell):
         if scale is None:
             scale = self.pixel_scale
 
-        pixel_offset = numpy.asarray(pixel_offset, dtype=numpy.int32)
+        pixel_offset = numpy.asarray(pixel_offset, dtype=numpy.int64)
 
         # Centroids are stored internally as float32 numpy arrays, 
-        #  indicies must be ints, so we cast to a uin16 before conversion to tuple
-        return tuple(numpy.round(self._centroid/scale + pixel_offset).astype(numpy.uint16))
+        #  indicies must be ints, so we cast to a uint32 before conversion to tuple
+        return tuple(numpy.round(self._centroid/scale + pixel_offset).astype(numpy.uint32))
 
     # Using the old property interface to stay consistent with the Cell and ImageSlice
     #  classes that this inherits from.

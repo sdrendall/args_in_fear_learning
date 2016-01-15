@@ -1,5 +1,6 @@
 bregma_in_atlas = 5525  # in um
 atlas_scale = 25 # in um
+vsi_scale = .64497 # in um
 
 
 def physical_to_index(physical_coordinate):
