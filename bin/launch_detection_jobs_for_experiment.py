@@ -20,10 +20,10 @@ def configure_parser():
                         default=path.join(FISHERMAN_ROOT, 'caffe/fish_net_conv_deploy.prototxt'),
                         help='Path to the net prototxt file to use for cell detection'
                              'Default: $FISHERMAN/caffe/fish_net_conv_deploy.prototxt')
-    parser.add_argument('-c', '--chunk_size', default=3000,
+    parser.add_argument('-c', '--chunk_size', default=1800,
                         help='The width of chunks to split input vsis into. '
                         'This value should be as large as possible before memory issues are encounted. '
-                        'Chunks are square so the height will equal the width. Default = 1000')
+                        'Chunks are square so the height will equal the width. Default = 1800')
     
     return parser
 
@@ -40,7 +40,7 @@ def create_process(args, entry):
         '-e', args.experiment_path,
         '-m', args.model_path,
         '-n', args.net_path,
-        '-c', args.chunk_size,
+        '-c', str(args.chunk_size),
         path.join(experiment_path, entry['detectedCellsPath'])
     ]
 
@@ -54,7 +54,7 @@ def main():
     experiment_path = path.expanduser(args.experiment_path)
     metadata_handler = io.MetadataManager(experiment_path)
 
-    scheduler = parallelization.Scheduler()
+    scheduler = parallelization.Scheduler(max_threads=75)
     for entry in metadata_handler.metadata:
         scheduler.add_process(create_process(args, entry))
 

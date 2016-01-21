@@ -151,6 +151,7 @@ def main():
     # pickle the image descriptor
     output_file = open(output_path, 'w')
     pickle.dump(image_descriptor, output_file)
+    output_file.close()
 
 if __name__ == '__main__':
     main()

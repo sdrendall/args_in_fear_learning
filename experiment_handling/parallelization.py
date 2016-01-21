@@ -211,7 +211,6 @@ class BatchProcess(Process):
         Process.__init__(self, bsub_path, *(self.submission_args + self.job_args), **kwargs)
 
     def launch(self):
-        print 'Launching Batch Job'
         self.args = self.submission_args + self.job_args
         d = Process.launch(self)
         return d
