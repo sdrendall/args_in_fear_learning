@@ -146,6 +146,9 @@ def main():
         image_descriptor.cells += physical_cells
 
         prev_end_row, prev_end_col = vsi_chunker.current_chunk_bounds[2:]
+        # Correct for borders. I just calculated these by hand. It's a script. Get over it.
+        prev_end_row -= 21
+        prev_end_col -= 21
 
 
     # Compute and set the offset of the region map
