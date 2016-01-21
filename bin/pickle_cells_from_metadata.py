@@ -111,6 +111,13 @@ def main():
         'num_classes': 2
     }
 
+    vsi_chunker_params = {
+        'chunk_size': args.chunk_size,
+        'stride': 6,
+        'window_size': 43,
+        'num_classes': 1
+    }
+
     cell_detector = detection.CellDetector(net=fish_net, cell_radius=12, signal_channel=0, chunker_params=detector_chunker_params)
     cell_detector.set_mode_cpu()
 
@@ -122,10 +129,11 @@ def main():
     vsi_image = load_vsi(vsi_path)
     javabridge.kill_vm() # Caffe will segfault if the jvm is running...
 
-    vsi_chunker = detection.ImageChunker(vsi_image.transpose(2,0,1), chunk_size=detector_chunker_params['chunk_size'])
+    vsi_chunker = detection.ImageChunkerWithOutput(vsi_image.transpose(2,0,1), **vsi_chunker_params)
+    vsi_chunker.allocate_output()
 
     prev_end_row = prev_end_col = -1
-    for chunk in vsi_chunker:
+    for chunk, _ in vsi_chunker:
         cell_detector.set_image(chunk.transpose(1,2,0))
         detected_cells = cell_detector.detect_cells()
         start_row, start_col = vsi_chunker.current_chunk_bounds[:2]
