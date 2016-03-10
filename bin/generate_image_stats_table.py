@@ -47,6 +47,18 @@ def main():
             hemisphere_map = io.load_mhd(path.join(experiment_path, entry['registeredHemisphereLabelsPath']))[0]
         except:
             print "Could not load registration results for %s.  Registration probably failed" % entry['vsiPath']
+            # It is nice to know which images have been excluded from registration.
+            # This is as much information as we can extract from the metadata entry
+            image_stats_table = pandas.concat(image_stats_table,
+                {
+                    'image': [path.basename(entry['vsiPath'])],
+                    'animal': [dataframes.get_animal(entry['vsiPath'])],
+                    'slide': [dataframes.get_slide(entry['vsiPath'])],
+                    'condition': [dataframes.get_class(entry['vsiPath'])],
+                    'excluded_from_registration': [entry.get('exclude', True)]
+                }
+            )
+
             continue
 
         for hemisphere in (1, 2):
@@ -59,6 +71,7 @@ def main():
             slides = [dataframes.get_slide(entry['vsiPath'])] * len(regions)
             conditions = [dataframes.get_class(entry['vsiPath'])] * len(regions)
             hemispheres = [hemisphere] * len(regions)
+            exclusions = [entry.get('exclude', False)] * len(regions)
 
             depths = [entry.get('atlasIndex', None)] * len(regions)
             usabilities = [entry.get('sliceUsable', None)] * len(regions)
@@ -76,7 +89,8 @@ def main():
                 'disqualified': disqualifications,
                 'region': regions,
                 'hemisphere': hemispheres,
-                'area': region_areas
+                'area': region_areas,
+                'excluded_from_registration': exclusions
             })
 
             image_stats_table = pandas.concat((image_stats_table, update_df))
