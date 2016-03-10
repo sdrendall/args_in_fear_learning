@@ -12,7 +12,7 @@ def main():
             return
 
     csv_path = path.expanduser(argv[1])
-    path_exprs = imap(path.expanduser, argv[2])
+    path_exprs = imap(path.expanduser, argv[2:])
     p_file_paths = chain(imap(glob, path_exprs))
     image_iter = (open(file_path) for file_path in p_file_paths)
 
