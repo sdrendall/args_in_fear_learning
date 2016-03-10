@@ -36,9 +36,13 @@ def get_region_containing_cell(cell, image_descriptor, with_hemisphere=True):
         else:
             return region_id
 
+    # Return 0 if out of bounds. 0 corresponds to no region
     except IndexError:
         print "Centroid {} out of image boundries".format(region_map_index)
-        return None
+        if with_hemisphere:
+            return (0, 0)
+        else:
+            return 0
 
 
 def get_cell_counts_from_image_descriptor_sequence(imd_seq):

@@ -13,37 +13,49 @@ classes = [
     'Ctx',
     'FC',
     'Shock',
-    'Tone'
+    'Tone',
+    'EE3Weeks',
+    'Naive3Weeks'
 ]
 
 
-def get_class(path):
+def get_class(input_path):
     for class_tag in classes:
-        if class_tag in path:
+        if class_tag.lower() in path.basename(input_path).lower():
+            print "Found class %s for file %s" % (class_tag.lower(), path.basename(input_path).lower())
             return class_tag
+
 
     print "Could not determine class of %s" % path
     return None
 
 
-def get_animal(path):
-    for cls in classes:
-        exp = r'{}\(([0-9]+)\)'.format(cls)
-        match = re.search(exp, path)
-        if match:
-            return match.group(1)
+#def get_animal(path):
+#    for cls in classes:
+#        exp = r'{}\(([0-9]+)\)'.format(cls)
+#        match = re.search(exp, path)
+#        if match:
+#            return match.group(1)
+#
+#    print "Could not determine animal of %s" % path
+#    return None
 
-    print "Could not determine animal of %s" % path
-    return None
+def get_animal(input_path):
+    filename = path.basename(input_path)
+    return filename.split('_')[0].lower()
 
 
-def get_slide(path):
-    exp = r'[Ss]lide_([0-9]+)'
-    try:
-        return re.search(exp, path).group(1)
-    except AttributeError:
-        print "Could not determine slide of %s" % path
-        return None
+#def get_slide(path):
+#    exp = r'[Ss]lide_([0-9]+)'
+#    try:
+#        return re.search(exp, path).group(1)
+#    except AttributeError:
+#        print "Could not determine slide of %s" % path
+#        return None
+
+def get_slide(input_path):
+    filename = path.basename(input_path)
+    return filename.split('_')[1].lower()
 
 
 def get_rows_from_image(image):
