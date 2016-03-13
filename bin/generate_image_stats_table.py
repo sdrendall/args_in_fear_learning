@@ -76,7 +76,7 @@ def main():
             depths = [entry.get('atlasIndex', None)] * len(regions)
             usabilities = [entry.get('sliceUsable', None)] * len(regions)
 
-            disqualifications = [(region, hemisphere) in entry.get('regionIdsToExclude', []) 
+            disqualifications = [[region, hemisphere] in entry.get('regionIdsToExclude', []) 
                                     for region in regions]
 
             update_df = pandas.DataFrame({
@@ -86,7 +86,7 @@ def main():
                 'condition': conditions,
                 'depth': depths,
                 'slice_usable': usabilities,
-                'disquaified': disqualifications,
+                'disqualified': disqualifications,
                 'region': regions,
                 'hemisphere': hemispheres,
                 'area': region_areas,

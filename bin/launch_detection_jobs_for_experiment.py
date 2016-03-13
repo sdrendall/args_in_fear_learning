@@ -13,9 +13,9 @@ def configure_parser():
                         help='The root directory containing the data to be processed.'
                              '  Defaults to the current directory.')
     parser.add_argument('-m', '--model_path', 
-                        default=path.join(FISHERMAN_ROOT, 'models/median_normalized/fish_net_conv_deploy_weights.caffemodel'),
+                        default=path.join(FISHERMAN_ROOT, 'models/original_and_qc/fish_net_conv_deploy_weights.caffemodel'),
                         help='Path to the caffemodel to be used for cell detection'
-                             'Default: $FISHERMAN/models/median_normalized/fish_net_conv_deploy_weights.caffemodel')
+                             'Default: $FISHERMAN/models/original_and_qc/fish_net_conv_deploy_weights.caffemodel')
     parser.add_argument('-n', '--net_path',
                         default=path.join(FISHERMAN_ROOT, 'caffe/fish_net_conv_deploy.prototxt'),
                         help='Path to the net prototxt file to use for cell detection'
@@ -67,7 +67,10 @@ def main():
 
     scheduler = parallelization.Scheduler(max_threads=75)
     for entry in metadata_handler.metadata:
-        scheduler.add_process(create_process(args, entry))
+        if not entry['exclude']:
+            scheduler.add_process(create_process(args, entry))
+        else:
+            print "Entry %s is marked for exclusion" % entry['vsiPath']
 
     print "Launching Cell Detection Jobs"
 

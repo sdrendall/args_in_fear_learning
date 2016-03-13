@@ -9,7 +9,7 @@ def get_entry_from_name(name, metadata):
             return entry
 
     print "No Entry Found for image %s" % name
-    return None
+    return {}
 
 
 def main():
@@ -29,9 +29,12 @@ def main():
     unique_ims = set(df['image'])
     entry_map = {im_name: get_entry_from_name(im_name, meta_man.metadata) for im_name in unique_ims}
     zipped = izip(df['image'], df['region'], df['hemisphere'])
+
     dqs = [[region, hemisphere] in entry_map[im_name].get('regionIdsToExclude', list()) for im_name, region, hemisphere in zipped]
+    slice_usabilities = [entry_map[im_name].get('sliceUsable', None) for im_name in df['image']]
 
     df['disqualified'] = dqs
+    df['slice_usable'] = slice_usabilities
     df.to_csv(out_path)
 
 

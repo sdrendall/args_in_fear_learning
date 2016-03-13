@@ -5,9 +5,6 @@ from fisherman import math
 
 
 def overlay_cells_on_image(image, boundries, cells, offset=(0,0)):
-    """
-    
-    """
     mask = numpy.zeros(image.shape[:2])
     boundries -= numpy.asarray(tuple(offset) * 2)
     label = 1
@@ -22,8 +19,11 @@ def filter_cells_by_boundry(cells, boundries):
     return (cell for cell in cells if (cell._bbox[:2] >= numpy.asarray(boundries[:2]).all()
                 and cell._bbox[2:] <= numpy.asarray(boundries[2:]).all()))
 
-def create_cell_mask_from_descriptor(descriptor):
-    vsi_shape = get_vsi_shape_from_descriptor(descriptor)
+
+def create_cell_mask_from_descriptor(descriptor, vsi_shape=None):
+    if vsi_shape is None:
+        vsi_shape = get_vsi_shape_from_descriptor(descriptor)
+
     mask = numpy.zeros(vsi_shape)
 
     for cell in descriptor.cells:

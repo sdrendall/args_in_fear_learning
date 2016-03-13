@@ -22,7 +22,8 @@ class StructureFinder:
     def get_name_from_id(self, id_no):
         structure = self.search_structure_data_for_attribute('id', id_no)
         if structure is None:
-            print "Could not find structure with id: %r" % id_no
+            if id_no != 0:
+                print "Could not find structure with id: %r" % id_no
             return None
         else:
             return structure['name']
