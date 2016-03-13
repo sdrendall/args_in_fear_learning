@@ -34,13 +34,23 @@ class ImageDescriptor(object):
                       region_map_scale=conversion.atlas_scale, 
                       region_map_offset=(0,0), 
                       cells=None, 
-                      experiment_path=getcwd()):
+                      experiment_path=getcwd(),
+                      flip=False,
+                      flop=False):
         """
         Instantiate an image from the given metadata dict (from a fishRegistration experiment's metadata.json file)
         """
 
         region_map = io.load_mhd(path.join(experiment_path, metadata['registeredAtlasLabelsPath']))[0]
         hemisphere_map = io.load_mhd(path.join(experiment_path, metadata['registeredHemisphereLabelsPath']))[0]
+
+        if flip:
+            region_map = numpy.flipud(region_map)
+            hemisphere_map = numpy.flipud(hemisphere_map)
+
+        if flop:
+            region_map = numpy.fliplr(region_map)
+            hemisphere_map = numpy.fliplr(hemisphere_map)
         
         return cls(
             source_path=metadata['vsiPath'],

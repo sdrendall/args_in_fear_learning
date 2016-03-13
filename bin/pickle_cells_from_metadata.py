@@ -37,7 +37,10 @@ def configure_parser():
                         help='The width of chunks to split input vsis into. '
                         'This value should be as large as possible before memory issues are encounted. '
                         'Chunks are square so the height will equal the width. Default = 1800')
-    
+    parser.add_argument('--flip', default=False, action='store_true',
+                        help='Corrects for vsi files that have been flipped vertically')
+    parser.add_argument('--flop', default=False, action='store_true',
+                        help='Corrects for vsi files that have been flipped horizontally')
     return parser
 
 
@@ -125,7 +128,13 @@ def main():
     javabridge.start_vm(class_path=bioformats.JARS)
     log4j.basic_config()
 
-    image_descriptor = data.ImageDescriptor.from_metadata(metadata, experiment_path=experiment_path)
+    image_descriptor = data.ImageDescriptor.from_metadata(
+        metadata, 
+        experiment_path=experiment_path,
+        flip=args.flip,
+        flop=args.flop
+    )
+
     vsi_image = load_vsi(vsi_path)
     javabridge.kill_vm() # Caffe will segfault if the jvm is running...
 

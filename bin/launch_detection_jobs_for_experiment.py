@@ -24,7 +24,11 @@ def configure_parser():
                         help='The width of chunks to split input vsis into. '
                         'This value should be as large as possible before memory issues are encounted. '
                         'Chunks are square so the height will equal the width. Default = 1800')
-    
+    parser.add_argument('--flip', default=False, action='store_true',
+                        help='Corrects for vsi files that have been flipped vertically')
+    parser.add_argument('--flop', default=False, action='store_true',
+                        help='Corrects for vsi files that have been flipped horizontally')
+   
     return parser
 
 def compose_output_path(im_data, suffix):
@@ -40,12 +44,19 @@ def create_process(args, entry):
         '-e', args.experiment_path,
         '-m', args.model_path,
         '-n', args.net_path,
-        '-c', str(args.chunk_size),
-        path.join(experiment_path, entry['detectedCellsPath'])
+        '-c', str(args.chunk_size)
     ]
 
+    if args.flip:
+        arg_list += ['--flip']
+
+    if args.flop:
+        arg_list += ['--flop']
+
+    arg_list += [path.join(experiment_path, entry['detectedCellsPath'])]
+
     log_path = path.join(experiment_path, entry['detectionLog'])
-    return parallelization.BatchProcess(*arg_list, cwd=args.experiment_path, log_path=log_path, run_time='2:00')
+    return parallelization.BatchProcess(*arg_list, cwd=args.experiment_path, log_path=log_path, run_time='6:00')
 
 def main():
     parser = configure_parser()
