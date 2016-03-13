@@ -49,14 +49,17 @@ def main():
             print "Could not load registration results for %s.  Registration probably failed" % entry['vsiPath']
             # It is nice to know which images have been excluded from registration.
             # This is as much information as we can extract from the metadata entry
-            image_stats_table = pandas.concat(image_stats_table,
-                {
-                    'image': [path.basename(entry['vsiPath'])],
-                    'animal': [dataframes.get_animal(entry['vsiPath'])],
-                    'slide': [dataframes.get_slide(entry['vsiPath'])],
-                    'condition': [dataframes.get_class(entry['vsiPath'])],
-                    'excluded_from_registration': [entry.get('exclude', True)]
-                }
+            image_stats_table = pandas.concat(
+                (
+                    image_stats_table,
+                    pandas.DataFrame({
+                        'image': [path.basename(entry['vsiPath'])],
+                        'animal': [dataframes.get_animal(entry['vsiPath'])],
+                        'slide': [dataframes.get_slide(entry['vsiPath'])],
+                        'condition': [dataframes.get_class(entry['vsiPath'])],
+                        'excluded_from_registration': [entry.get('exclude', True)]
+                    })
+                )
             )
 
             continue
