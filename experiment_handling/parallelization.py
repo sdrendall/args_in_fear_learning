@@ -194,15 +194,22 @@ class ProcessChain(Task):
 
 class BatchProcess(Process):
     """
-    A process that is submitted to an lsf queue.  Currently works with the HMS Orchestra cluster, and submits to the
-    'short' queue
+    A process that is submitted to an lsf queue
     """
     # TODO: Add memory and time settings
 
     def __init__(self, *args, **kwargs):
         bsub_path = 'bsub'
         run_time = kwargs.get('run_time', '12:00')
-        self.submission_args = ['bsub', '-W', run_time, '-q', 'short', '-R', 'rusage[mem=32000]']
+        queue = kwargs.get('queue', 'short')
+        memory = kwargs.get('memory', 32000)
+        ngpus = kwargs.get('ngpus', 0)
+        self.submission_args = [
+            'bsub', 
+            '-W', run_time, 
+            '-q', queue, 
+            '-R', 'rusage[mem={mem},ngpus={ngpus}]'.format(**{'mem': memory, 'ngpus': ngpus})
+        ]
         self.log_path = kwargs.get('log_path', None)
         if self.log_path is not None:
             log_string = '-o %s -e %s ' % (self.log_path, self.log_path)
