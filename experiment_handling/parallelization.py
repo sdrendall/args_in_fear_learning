@@ -1,4 +1,4 @@
-from twisted.internet import defer, protocol
+from twisted.internet import defer, protocol, task
 import os
 import subprocess
 
@@ -77,8 +77,50 @@ class Scheduler(object):
 
 class BatchScheduler(Scheduler):
     
-    def __init__(self, max_threads=float('inf'), **kwargs):
+    def __init__(self, max_threads=float('inf'), poll_queue='gpu', polling_interval=5, **kwargs):
+        Scheduler.__init__(self, max_threads=max_threads, **kwargs)
+        self.poll_queue = poll_queue
+        self.poll_call = task.LoopingCall(self._open_next_process)
+        self.polling_interval = polling_interval
+        
+    def get_active_bjobs_count(self):
+        output_str = subprocess.check_output('bjobs -q {} | wc -l'.format(self.poll_queue), shell=True)
+        n_jobs = int(output_str) - 1 # The first bjobs output line is a header
+        return n_jobs
 
+    def run_processes(self):
+        self.poll_call.start(self.polling_interval)
+        Scheduler.run_processes(self)
+
+    def _open_next_process(self):
+        """
+        Attempts to open the next process in the process queue.  If the queue is empty, this function creates a
+        deferred that is fired when all process are fired.  When fired, this deferred stops the reactor, unblocking
+        the run_processes call.
+        :return:
+        """
+        if self.processes and self.get_active_bjobs_count < self.max_threads:
+            p = self.processes.pop(0)
+            d = p.launch()
+            d.addBoth(self._process_complete_callback)
+            self.fired_on_completion_deferreds.append(d)
+        elif self.stop_reactor_deferred is None and not self.processes:
+            # If I get here, the processes are exhausted, and the exit deferred hasn't been created yet
+            self.stop_reactor_deferred = defer.DeferredList(self.fired_on_completion_deferreds, consumeErrors=True)
+            self.stop_reactor_deferred.addBoth(self._stop_reactor_callback)
+
+    def _process_complete_callback(self, results):
+        """
+        Callback called when a process is completed.
+        Decrements the active_processes counter, and calls open_next_process()
+        :param results:
+        :return:
+        """
+        print 'Job Launched'
+        print 'Active Bjobs:', self.get_active_bjobs_count()
+        print 'Processes Remaining:', len(self.processes)
+        print '------------------------------------------'
+        return results
 
 class Task(object):
 
