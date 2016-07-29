@@ -5,7 +5,7 @@ import subprocess
 
 class Scheduler(object):
 
-    def __init__(self, max_threads=float('inf')):
+    def __init__(self, max_threads=float('inf'), **kwargs):
         self.max_threads = max_threads
         self.active_processes = 0
         self.processes = list()
@@ -73,6 +73,11 @@ class Scheduler(object):
         print 'Processes Remaining:', len(self.processes)
         self._open_next_process()
         return results
+
+
+class BatchScheduler(Scheduler):
+    
+    def __init__(self, max_threads=float('inf'), **kwargs):
 
 
 class Task(object):
