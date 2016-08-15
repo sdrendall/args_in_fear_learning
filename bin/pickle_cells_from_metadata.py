@@ -121,13 +121,14 @@ def main():
         'num_classes': 1
     }
 
-    cell_detector = detection.CellDetector(net=fish_net, cell_radius=7, signal_channel=0, chunker_params=detector_chunker_params)
+    cell_detector = detection.CellDetector(net=fish_net, cell_radius=11, signal_channel=0, chunker_params=detector_chunker_params)
     cell_detector.set_mode_cpu()
 
     # Configure and start the JVM for loading vsi images with bioformats
     javabridge.start_vm(class_path=bioformats.JARS)
     log4j.basic_config()
 
+    # Creates an image descriptor from a metadata entry
     image_descriptor = data.ImageDescriptor.from_metadata(
         metadata, 
         experiment_path=experiment_path,
