@@ -99,7 +99,7 @@ class BatchScheduler(Scheduler):
         the run_processes call.
         :return:
         """
-        if self.processes and self.get_active_bjobs_count < self.max_threads:
+        if self.processes and self.get_active_bjobs_count() < self.max_threads:
             p = self.processes.pop(0)
             d = p.launch()
             d.addBoth(self._process_complete_callback)
