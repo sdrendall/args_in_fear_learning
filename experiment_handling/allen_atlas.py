@@ -1,4 +1,5 @@
 import json
+from os import path
 from itertools import imap, chain
 
 
@@ -179,7 +180,12 @@ class StructureNotFoundError(Exception):
 
 
 def main():
-    structure_data_path = '/home/sam/Dropbox/grayLab/allenReferenceAtlas_mouseCoronal/structureData.json'
+    from sys import argv
+    if len(argv) < 2:
+        print "Insufficient Arguments!"
+        print "Proper Usage: {} pathToStructureData.json".format(argv[0])
+        return
+    structure_data_path = path.expanduser(argv[1])
     finder = StructureFinder(structure_data_path)
 
     print "Finding ids by acronym....."
